@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/components/ui/use-toast";
 import { sortOptions } from "@/config";
-import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
+import { addToCart, fetchCartItems, setCartItems } from "@/store/shop/cart-slice";
 import {
   fetchAllFilteredProducts,
   fetchProductDetails,
@@ -49,6 +49,7 @@ function ShoppingListing() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const { toast } = useToast();
+  const [loadingStates, setLoadingStates] = useState({});
 
   const categorySearchParam = searchParams.get("category");
 
@@ -84,8 +85,8 @@ function ShoppingListing() {
   }
 
   function handleAddtoCart(getCurrentProductId, getTotalStock) {
-    // console.log(cartItems);
-    let getCartItems = cartItems.items || [];
+    setLoadingStates((prev) => ({ ...prev, [getCurrentProductId]: true }));
+    let getCartItems = cartItems?.items || [];
 
     if (getCartItems.length) {
       const indexOfCurrentItem = getCartItems.findIndex(
@@ -98,7 +99,7 @@ function ShoppingListing() {
             title: `Only ${getQuantity} quantity can be added for this item`,
             variant: "destructive",
           });
-
+          setLoadingStates((prev) => ({ ...prev, [getCurrentProductId]: false }));
           return;
         }
       }
@@ -110,20 +111,44 @@ function ShoppingListing() {
         productId: getCurrentProductId,
         quantity: 1,
       })
-    ).then((data) => {
-      if (data?.payload?.success) {
-        dispatch(fetchCartItems(user?.id));
+    )
+      .unwrap()
+      .then((data) => {
+        if (data?.success) {
+          dispatch(fetchCartItems(user?.id));
+          toast({
+            title: "Product is added to cart",
+            variant: "success"
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to add item to cart:", error);
         toast({
-          title: "Product is added to cart",
+          title: "Failed to add item to cart",
+          variant: "destructive"
         });
-      }
-    });
+      })
+      .finally(() => {
+        setLoadingStates((prev) => ({ ...prev, [getCurrentProductId]: false }));
+      });
   }
 
   useEffect(() => {
     setSort("price-lowtohigh");
     setFilters(JSON.parse(sessionStorage.getItem("filters")) || {});
   }, [categorySearchParam]);
+
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(fetchCartItems(user.id))
+        .unwrap()
+        .catch((error) => {
+          console.error("Failed to fetch cart items:", error);
+          // Don't clear cart on error
+        });
+    }
+  }, [dispatch, user?.id]);
 
   useEffect(() => {
     if (filters && Object.keys(filters).length > 0) {
@@ -187,7 +212,8 @@ function ShoppingListing() {
                 <ShoppingProductTile
                   handleGetProductDetails={handleGetProductDetails}
                   product={productItem}
-                  handleAddtoCart={handleAddtoCart}
+                  handleAddtoCart={() => handleAddtoCart(productItem._id, productItem.totalStock)}
+                  isLoading={loadingStates[productItem._id]}
                 />
               ))
             : null}

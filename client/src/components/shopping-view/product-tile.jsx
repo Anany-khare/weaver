@@ -2,11 +2,13 @@ import { Card, CardContent, CardFooter } from "../ui/card";
 import { Button } from "../ui/button";
 import { brandOptionsMap, categoryOptionsMap } from "@/config";
 import { Badge } from "../ui/badge";
+import { Loader2 } from "lucide-react";
 
 function ShoppingProductTile({
   product,
   handleGetProductDetails,
   handleAddtoCart,
+  isLoading
 }) {
   return (
     <Card className="w-full max-w-sm mx-auto">
@@ -64,10 +66,15 @@ function ShoppingProductTile({
           </Button>
         ) : (
           <Button
-            onClick={() => handleAddtoCart(product?._id, product?.totalStock)}
-            className="w-full"
+            onClick={handleAddtoCart}
+            className="w-full transition-all duration-200 hover:scale-[1.02] hover:bg-primary/90 hover:rotate-1"
+            disabled={isLoading}
           >
-            Add to cart
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              "Add to cart"
+            )}
           </Button>
         )}
       </CardFooter>

@@ -55,6 +55,7 @@ function ShoppingHome() {
 
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const { user } = useSelector((state) => state.auth);
+  const [loadingStates, setLoadingStates] = useState({});
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -76,6 +77,7 @@ function ShoppingHome() {
   }
 
   function handleAddtoCart(getCurrentProductId) {
+    setLoadingStates(prevState => ({ ...prevState, [getCurrentProductId]: true }));
     dispatch(
       addToCart({
         userId: user?.id,
@@ -85,8 +87,11 @@ function ShoppingHome() {
     ).then((data) => {
       if (data?.payload?.success) {
         dispatch(fetchCartItems(user?.id));
-        toast({ title: "Product is added to cart" });
+        toast({ title: "Product is added to cart", variant: "success" });
+      } else {
+        toast({ title: "Failed to add to cart", variant: "destructive" });
       }
+      setLoadingStates(prevState => ({ ...prevState, [getCurrentProductId]: false }));
     });
   }
 
@@ -132,7 +137,7 @@ function ShoppingHome() {
                 (prevSlide - 1 + staticBanners.length) % staticBanners.length
             )
           }
-          className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white/80"
+          className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-card"
         >
           <ChevronLeftIcon className="w-4 h-4" />
         </Button>
@@ -142,14 +147,14 @@ function ShoppingHome() {
           onClick={() =>
             setCurrentSlide((prevSlide) => (prevSlide + 1) % staticBanners.length)
           }
-          className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white/80"
+          className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-card"
         >
           <ChevronRightIcon className="w-4 h-4" />
         </Button>
       </div>
 
       {/* Categories */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-12 bg-background">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">
             Shop by category
@@ -173,7 +178,7 @@ function ShoppingHome() {
       </section>
 
       {/* Brands */}
-      <section className="py-12 bg-gray-50">
+      <section className="py-12 bg-background">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">Shop by Brand</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -204,7 +209,8 @@ function ShoppingHome() {
                 key={productItem.id}
                 handleGetProductDetails={handleGetProductDetails}
                 product={productItem}
-                handleAddtoCart={handleAddtoCart}
+                handleAddtoCart={() => handleAddtoCart(productItem?._id)}
+                isLoading={loadingStates[productItem?._id]}
               />
             ))}
           </div>

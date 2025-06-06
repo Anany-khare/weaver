@@ -3,10 +3,11 @@ import img from "../../assets/account.jpg";
 import { useDispatch, useSelector } from "react-redux";
 import UserCartItemsContent from "@/components/shopping-view/cart-items-content";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createNewOrder } from "@/store/shop/order-slice";
 import { Navigate } from "react-router-dom";
 import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 function ShoppingCheckout() {
   const { cartItems } = useSelector((state) => state.shopCart);
@@ -14,6 +15,7 @@ function ShoppingCheckout() {
   const { approvalURL } = useSelector((state) => state.shopOrder);
   const [currentSelectedAddress, setCurrentSelectedAddress] = useState(null);
   const [isPaymentStart, setIsPaymemntStart] = useState(false);
+  const [isPaypalLoading, setIsPaypalLoading] = useState(false);
   const dispatch = useDispatch();
   const { toast } = useToast();
 
@@ -49,6 +51,8 @@ function ShoppingCheckout() {
 
       return;
     }
+
+    setIsPaypalLoading(true);
 
     const orderData = {
       userId: user?.id,
@@ -87,13 +91,17 @@ function ShoppingCheckout() {
         setIsPaymemntStart(true);
       } else {
         setIsPaymemntStart(false);
+        toast({ title: "Failed to initiate Paypal payment", variant: "destructive" });
       }
+      setIsPaypalLoading(false);
     });
   }
 
-  if (approvalURL) {
-    window.location.href = approvalURL;
-  }
+  useEffect(() => {
+    if (approvalURL) {
+      window.open(approvalURL, '_blank'); // Open in new tab only when approvalURL changes
+    }
+  }, [approvalURL]); // Depend on approvalURL
 
   return (
     <div className="flex flex-col">
@@ -118,10 +126,16 @@ function ShoppingCheckout() {
             </div>
           </div>
           <div className="mt-4 w-full">
-            <Button onClick={handleInitiatePaypalPayment} className="w-full">
-              {isPaymentStart
-                ? "Processing Paypal Payment..."
-                : "Checkout with Paypal"}
+            <Button
+              onClick={handleInitiatePaypalPayment}
+              className="w-full"
+              disabled={isPaypalLoading}
+            >
+              {isPaypalLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                "Checkout with Paypal"
+              )}
             </Button>
           </div>
         </div>

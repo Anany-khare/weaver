@@ -113,7 +113,7 @@ function UserCartItemsContent({ cartItem }) {
         </p>
         <Trash
           onClick={() => handleCartItemDelete(cartItem)}
-          className="cursor-pointer mt-1"
+          className="cursor-pointer mt-1 text-muted-foreground hover:text-red-500 transition-colors"
           size={20}
         />
       </div>

@@ -63,7 +63,14 @@ export const updateCartQuantity = createAsyncThunk(
 const shoppingCartSlice = createSlice({
   name: "shoppingCart",
   initialState,
-  reducers: {},
+  reducers: {
+    clearCart: (state) => {
+      state.cartItems = [];
+    },
+    setCartItems: (state, action) => {
+      state.cartItems = action.payload;
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(addToCart.pending, (state) => {
@@ -75,7 +82,6 @@ const shoppingCartSlice = createSlice({
       })
       .addCase(addToCart.rejected, (state) => {
         state.isLoading = false;
-        state.cartItems = [];
       })
       .addCase(fetchCartItems.pending, (state) => {
         state.isLoading = true;
@@ -86,7 +92,6 @@ const shoppingCartSlice = createSlice({
       })
       .addCase(fetchCartItems.rejected, (state) => {
         state.isLoading = false;
-        state.cartItems = [];
       })
       .addCase(updateCartQuantity.pending, (state) => {
         state.isLoading = true;
@@ -97,7 +102,6 @@ const shoppingCartSlice = createSlice({
       })
       .addCase(updateCartQuantity.rejected, (state) => {
         state.isLoading = false;
-        state.cartItems = [];
       })
       .addCase(deleteCartItem.pending, (state) => {
         state.isLoading = true;
@@ -108,9 +112,9 @@ const shoppingCartSlice = createSlice({
       })
       .addCase(deleteCartItem.rejected, (state) => {
         state.isLoading = false;
-        state.cartItems = [];
       });
   },
 });
 
+export const { clearCart, setCartItems } = shoppingCartSlice.actions;
 export default shoppingCartSlice.reducer;

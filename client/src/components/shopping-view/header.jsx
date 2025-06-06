@@ -1,4 +1,4 @@
-import { HousePlug, LogOut, Menu, ShoppingCart, UserCog } from "lucide-react";
+import { HousePlug, LogOut, Menu, Moon, ShoppingCart, Sun, UserCog } from "lucide-react";
 import {
   Link,
   useLocation,
@@ -23,6 +23,7 @@ import UserCartWrapper from "./cart-wrapper";
 import { useEffect, useState } from "react";
 import { fetchCartItems } from "@/store/shop/cart-slice";
 import { Label } from "../ui/label";
+import { useTheme } from "../theme-provider";
 
 function MenuItems() {
   const navigate = useNavigate();
@@ -30,7 +31,6 @@ function MenuItems() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   function handleNavigate(getCurrentMenuItem) {
-    sessionStorage.removeItem("filters");
     const currentFilter =
       getCurrentMenuItem.id !== "home" &&
       getCurrentMenuItem.id !== "products" &&
@@ -70,19 +70,54 @@ function HeaderRightContent() {
   const [openCartSheet, setOpenCartSheet] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { theme, setTheme } = useTheme();
 
   function handleLogout() {
     dispatch(logoutUser());
   }
 
   useEffect(() => {
-    dispatch(fetchCartItems(user?.id));
-  }, [dispatch]);
+    // Initial fetch of cart items
+    if (user?.id) {
+      dispatch(fetchCartItems(user?.id));
+    }
+
+    // Set up BroadcastChannel listener for cart updates
+    if ('BroadcastChannel' in window) {
+      const bc = new BroadcastChannel('cart_channel');
+      
+      bc.onmessage = (event) => {
+        if (event.data === 'cart_cleared') {
+          // When cart is cleared in another tab, refetch cart items
+          if (user?.id) {
+             dispatch(fetchCartItems(user?.id));
+          }
+        }
+      };
+
+      // Clean up the channel on component unmount
+      return () => bc.close();
+    }
+
+  }, [dispatch, user?.id]); // Add user?.id to dependencies
 
   // console.log(cartItems, "sangam");
 
   return (
     <div className="flex lg:items-center lg:flex-row flex-col gap-4">
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+      >
+        {theme === "light" ? (
+          <Moon className="h-5 w-5" />
+        ) : (
+          <Sun className="h-5 w-5" />
+        )}
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+
       <Sheet open={openCartSheet} onOpenChange={() => setOpenCartSheet(false)}>
         <Button
           onClick={() => setOpenCartSheet(true)}
@@ -140,7 +175,7 @@ function ShoppingHeader() {
       <div className="flex h-16 items-center justify-between px-4 md:px-6">
         <Link to="/shop/home" className="flex items-center gap-2">
           <HousePlug className="h-6 w-6" />
-          <span className="font-bold">Ecommerce</span>
+          <span className="font-bold">Weaver</span>
         </Link>
         <Sheet>
           <SheetTrigger asChild>
