@@ -66,12 +66,13 @@ const loginUser = async (req, res) => {
         userName: checkUser.userName,
       },
       process.env.CLIENT_SECRET_KEY,
-      { expiresIn: "60m" }
+      { expiresIn: "7d" }
     );
 
-    res.cookie("token", token, { httpOnly: true, secure: false }).json({
+    res.json({
       success: true,
       message: "Logged in successfully",
+      token: token,
       user: {
         email: checkUser.email,
         role: checkUser.role,
@@ -89,33 +90,71 @@ const loginUser = async (req, res) => {
 };
 
 //logout
-
 const logoutUser = (req, res) => {
-  res.clearCookie("token").json({
+  res.json({
     success: true,
     message: "Logged out successfully!",
   });
 };
 
+//check auth
+const checkAuth = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.json({
+        success: false,
+        message: "No token provided"
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.CLIENT_SECRET_KEY);
+    const user = await User.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      return res.json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      user: {
+        email: user.email,
+        role: user.role,
+        id: user._id,
+        userName: user.userName,
+      }
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      message: "Invalid token"
+    });
+  }
+};
+
 //auth middleware
 const authMiddleware = async (req, res, next) => {
-  const token = req.cookies.token;
-  if (!token)
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorised user!",
-    });
-
   try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided",
+      });
+    }
+
     const decoded = jwt.verify(token, process.env.CLIENT_SECRET_KEY);
     req.user = decoded;
     next();
   } catch (error) {
     res.status(401).json({
       success: false,
-      message: "Unauthorised user!",
+      message: "Invalid token",
     });
   }
 };
 
-module.exports = { registerUser, loginUser, logoutUser, authMiddleware };
+module.exports = { registerUser, loginUser, logoutUser, checkAuth, authMiddleware };
