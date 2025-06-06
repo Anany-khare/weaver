@@ -4,10 +4,11 @@ import { useDispatch, useSelector } from "react-redux";
 import UserCartItemsContent from "@/components/shopping-view/cart-items-content";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
-import { createNewOrder } from "@/store/shop/order-slice";
-import { Navigate } from "react-router-dom";
+import { createNewOrder, capturePayment } from "@/store/shop/order-slice";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { clearCart } from "@/store/shop/cart-slice";
 
 function ShoppingCheckout() {
   const { cartItems } = useSelector((state) => state.shopCart);
@@ -16,6 +17,7 @@ function ShoppingCheckout() {
   const [currentSelectedAddress, setCurrentSelectedAddress] = useState(null);
   const [isPaymentStart, setIsPaymemntStart] = useState(false);
   const [isPaypalLoading, setIsPaypalLoading] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState(null);
   const dispatch = useDispatch();
   const { toast } = useToast();
 
@@ -99,9 +101,37 @@ function ShoppingCheckout() {
 
   useEffect(() => {
     if (approvalURL) {
-      window.open(approvalURL, '_blank'); // Open in new tab only when approvalURL changes
+      window.location.href = approvalURL;
     }
-  }, [approvalURL]); // Depend on approvalURL
+  }, [approvalURL]);
+
+  if (paymentStatus === 'success') {
+    return (
+      <Card className="flex flex-col items-center justify-center p-10">
+        <CardHeader className="p-0 text-center">
+          <CardTitle className="text-4xl">Payment is successful!</CardTitle>
+        </CardHeader>
+        <p className="mt-4 text-muted-foreground">Thank you for your purchase.</p>
+        <Button className="mt-5" onClick={() => window.location.href = "/shop/account"}>
+          View Orders
+        </Button>
+      </Card>
+    );
+  }
+
+  if (paymentStatus === 'cancelled') {
+    return (
+      <Card className="flex flex-col items-center justify-center p-10">
+        <CardHeader className="p-0 text-center">
+          <CardTitle className="text-2xl">Payment Cancelled</CardTitle>
+        </CardHeader>
+        <p className="mt-4 text-muted-foreground">Your payment was cancelled.</p>
+        <Button className="mt-5" onClick={() => setPaymentStatus(null)}>
+          Try Again
+        </Button>
+      </Card>
+    );
+  }
 
   return (
     <div className="flex flex-col">
