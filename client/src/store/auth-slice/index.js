@@ -18,9 +18,9 @@ const user = localStorage.getItem('user');
 
 // Set initial state
 const initialState = {
-  isAuthenticated: false, // Start as false, will be updated by checkAuth
-  isLoading: true, // Start as true to show loading state
-  user: null
+  isAuthenticated: !!token,
+  isLoading: false,
+  user: user ? JSON.parse(user) : null
 };
 
 // Set token in axios headers if it exists
@@ -31,13 +31,7 @@ if (token) {
 export const registerUser = createAsyncThunk(
   "/auth/register",
   async (formData) => {
-    const response = await api.post(
-      "/api/auth/register",
-      formData,
-      {
-        withCredentials: true,
-      }
-    );
+    const response = await api.post("/api/auth/register", formData);
     return response.data;
   }
 );
@@ -45,22 +39,29 @@ export const registerUser = createAsyncThunk(
 export const loginUser = createAsyncThunk(
   "/auth/login",
   async (formData) => {
-    const response = await api.post("/api/auth/login", formData);
-    if (response.data.token) {
-      setAuthToken(response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+    try {
+      const response = await api.post("/api/auth/login", formData);
+      if (response.data.token) {
+        setAuthToken(response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: "Login failed" };
     }
-    return response.data;
   }
 );
 
 export const logoutUser = createAsyncThunk(
   "/auth/logout",
   async () => {
-    await api.post("/api/auth/logout");
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    delete api.defaults.headers.common['Authorization'];
+    try {
+      await api.post("/api/auth/logout");
+    } finally {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      delete api.defaults.headers.common['Authorization'];
+    }
   }
 );
 
@@ -76,7 +77,6 @@ export const checkAuth = createAsyncThunk(
     try {
       const response = await api.get("/api/auth/check-auth");
       if (response.data.success) {
-        // Update user data in localStorage
         localStorage.setItem('user', JSON.stringify(response.data.user));
         return response.data;
       }
@@ -103,28 +103,27 @@ const authSlice = createSlice({
       .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
       })
-      .addCase(registerUser.fulfilled, (state, action) => {
+      .addCase(registerUser.fulfilled, (state) => {
         state.isLoading = false;
-        state.user = null;
-        state.isAuthenticated = false;
       })
-      .addCase(registerUser.rejected, (state, action) => {
+      .addCase(registerUser.rejected, (state) => {
         state.isLoading = false;
-        state.user = null;
-        state.isAuthenticated = false;
       })
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
+        state.error = null;
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = true;
         state.user = action.payload.user;
+        state.error = null;
       })
-      .addCase(loginUser.rejected, (state) => {
+      .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = false;
         state.user = null;
+        state.error = action.error.message;
       })
       .addCase(checkAuth.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -134,6 +133,7 @@ const authSlice = createSlice({
       .addCase(logoutUser.fulfilled, (state) => {
         state.isAuthenticated = false;
         state.user = null;
+        state.error = null;
       });
   },
 });
