@@ -101,12 +101,10 @@ function HeaderRightContent() {
 
   }, [dispatch, user?.id]); // Add user?.id to dependencies
 
-  // console.log(cartItems, "sangam");
-
   return (
-    <div className="flex lg:items-center lg:flex-row flex-col gap-4">
+    <div className="flex items-center gap-4">
       <Button
-        variant="outline"
+        variant="ghost"
         size="icon"
         onClick={() => setTheme(theme === "light" ? "dark" : "light")}
       >
@@ -115,54 +113,48 @@ function HeaderRightContent() {
         ) : (
           <Sun className="h-5 w-5" />
         )}
-        <span className="sr-only">Toggle theme</span>
       </Button>
-
-      <Sheet open={openCartSheet} onOpenChange={() => setOpenCartSheet(false)}>
-        <Button
-          onClick={() => setOpenCartSheet(true)}
-          variant="outline"
-          size="icon"
-          className="relative"
-        >
-          <ShoppingCart className="w-6 h-6" />
-          <span className="absolute top-[-5px] right-[2px] font-bold text-sm">
-            {cartItems?.items?.length || 0}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setOpenCartSheet(true)}
+        className="relative"
+      >
+        <ShoppingCart className="h-5 w-5" />
+        {cartItems?.items?.length > 0 && (
+          <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            {cartItems.items.length}
           </span>
-          <span className="sr-only">User cart</span>
-        </Button>
-        <UserCartWrapper
-          setOpenCartSheet={setOpenCartSheet}
-          cartItems={
-            cartItems && cartItems.items && cartItems.items.length > 0
-              ? cartItems.items
-              : []
-          }
-        />
-      </Sheet>
-
+        )}
+      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Avatar className="bg-black">
-            <AvatarFallback className="bg-black text-white font-extrabold">
-              {user?.userName[0].toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <Button variant="ghost" size="icon">
+            <Avatar className="h-8 w-8">
+              <AvatarFallback>
+                {user?.userName?.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent side="right" className="w-56">
-          <DropdownMenuLabel>Logged in as {user?.userName}</DropdownMenuLabel>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>My Account</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => navigate("/shop/account")}>
             <UserCog className="mr-2 h-4 w-4" />
-            Account
+            <span>Account</span>
           </DropdownMenuItem>
-          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
-            Logout
+            <span>Logout</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <Sheet open={openCartSheet} onOpenChange={setOpenCartSheet}>
+        <SheetContent>
+          <UserCartWrapper />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

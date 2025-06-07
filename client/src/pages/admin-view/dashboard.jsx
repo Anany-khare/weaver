@@ -11,8 +11,6 @@ function AdminDashboard() {
   const dispatch = useDispatch();
   const { featureImageList } = useSelector((state) => state.commonFeature);
 
-  // console.log(uploadedImageUrl, "uploadedImageUrl");
-
   function handleUploadFeatureImage() {
     dispatch(addFeatureImage(uploadedImageUrl)).then((data) => {
       if (data?.payload?.success) {
@@ -27,34 +25,49 @@ function AdminDashboard() {
     dispatch(getFeatureImages());
   }, [dispatch]);
 
-  // console.log(featureImageList, "featureImageList");
-
   return (
-    <div>
-      <ProductImageUpload
-        imageFile={imageFile}
-        setImageFile={setImageFile}
-        uploadedImageUrl={uploadedImageUrl}
-        setUploadedImageUrl={setUploadedImageUrl}
-        setImageLoadingState={setImageLoadingState}
-        imageLoadingState={imageLoadingState}
-        isCustomStyling={true}
-        // isEditMode={currentEditedId !== null}
-      />
-      <Button onClick={handleUploadFeatureImage} className="mt-5 w-full">
-        Upload
-      </Button>
-      <div className="flex flex-col gap-4 mt-5">
-        {featureImageList && featureImageList.length > 0
-          ? featureImageList.map((featureImgItem) => (
-              <div className="relative">
-                <img
-                  src={featureImgItem.image}
-                  className="w-full h-[300px] object-cover rounded-t-lg"
-                />
-              </div>
-            ))
-          : null}
+    <div className="grid gap-6">
+      <div className="grid gap-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+        </div>
+      </div>
+      <div className="grid gap-4">
+        <div className="grid gap-2">
+          <div className="font-medium">Upload Feature Image</div>
+          <ProductImageUpload
+            imageFile={imageFile}
+            setImageFile={setImageFile}
+            imageLoadingState={imageLoadingState}
+            uploadedImageUrl={uploadedImageUrl}
+            setUploadedImageUrl={setUploadedImageUrl}
+            setImageLoadingState={setImageLoadingState}
+          />
+          <Button
+            onClick={handleUploadFeatureImage}
+            disabled={!uploadedImageUrl || imageLoadingState}
+          >
+            Upload Image
+          </Button>
+        </div>
+      </div>
+      <div className="grid gap-4">
+        <div className="grid gap-2">
+          <div className="font-medium">Feature Images</div>
+          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+            {featureImageList && featureImageList.length > 0
+              ? featureImageList.map((imageItem) => (
+                  <div key={imageItem._id} className="relative">
+                    <img
+                      src={imageItem.image}
+                      alt={imageItem._id}
+                      className="w-full h-[200px] object-cover rounded-lg"
+                    />
+                  </div>
+                ))
+              : null}
+          </div>
+        </div>
       </div>
     </div>
   );

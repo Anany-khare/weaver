@@ -21,79 +21,42 @@ function ShoppingCheckout() {
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  // console.log(currentSelectedAddress, "cartItems");
-
-  const totalCartAmount =
-    cartItems && cartItems.items && cartItems.items.length > 0
-      ? cartItems.items.reduce(
-          (sum, currentItem) =>
-            sum +
-            (currentItem?.salePrice > 0
-              ? currentItem?.salePrice
-              : currentItem?.price) *
-              currentItem?.quantity,
-          0
-        )
-      : 0;
-
-  function handleInitiatePaypalPayment() {
-    if (cartItems.length === 0) {
+  function handleCreateOrder() {
+    if (!currentSelectedAddress) {
       toast({
-        title: "Your cart is empty. Please add items to proceed",
+        title: "Please select a delivery address",
         variant: "destructive",
       });
-
-      return;
-    }
-    if (currentSelectedAddress === null) {
-      toast({
-        title: "Please select one address to proceed.",
-        variant: "destructive",
-      });
-
       return;
     }
 
-    setIsPaypalLoading(true);
-
-    const orderData = {
-      userId: user?.id,
-      cartId: cartItems?._id,
-      cartItems: cartItems.items.map((singleCartItem) => ({
-        productId: singleCartItem?.productId,
-        title: singleCartItem?.title,
-        image: singleCartItem?.image,
-        price:
-          singleCartItem?.salePrice > 0
-            ? singleCartItem?.salePrice
-            : singleCartItem?.price,
-        quantity: singleCartItem?.quantity,
-      })),
-      addressInfo: {
-        addressId: currentSelectedAddress?._id,
-        address: currentSelectedAddress?.address,
-        city: currentSelectedAddress?.city,
-        pincode: currentSelectedAddress?.pincode,
-        phone: currentSelectedAddress?.phone,
-        notes: currentSelectedAddress?.notes,
-      },
-      orderStatus: "pending",
-      paymentMethod: "paypal",
-      paymentStatus: "pending",
-      totalAmount: totalCartAmount,
-      orderDate: new Date(),
-      orderUpdateDate: new Date(),
-      paymentId: "",
-      payerId: "",
-    };
-
-    dispatch(createNewOrder(orderData)).then((data) => {
-      // console.log(data, "sangam");
+    setIsPaymemntStart(true);
+    dispatch(
+      createNewOrder({
+        userId: user?.id,
+        cartItems: cartItems?.items,
+        addressInfo: currentSelectedAddress,
+      })
+    ).then((data) => {
       if (data?.payload?.success) {
-        setIsPaymemntStart(true);
+        window.location.href = data?.payload?.approvalURL;
+      }
+    });
+  }
+
+  function handleCapturePayment() {
+    setIsPaypalLoading(true);
+    dispatch(capturePayment()).then((data) => {
+      if (data?.payload?.success) {
+        setPaymentStatus("success");
+        dispatch(clearCart());
+        if ('BroadcastChannel' in window) {
+          const bc = new BroadcastChannel('cart_channel');
+          bc.postMessage('cart_cleared');
+          bc.close();
+        }
       } else {
-        setIsPaymemntStart(false);
-        toast({ title: "Failed to initiate Paypal payment", variant: "destructive" });
+        setPaymentStatus("failed");
       }
       setIsPaypalLoading(false);
     });
@@ -101,101 +64,47 @@ function ShoppingCheckout() {
 
   useEffect(() => {
     if (approvalURL) {
-      // Open PayPal in a new window
-      const paypalWindow = window.open(approvalURL, 'PayPal Payment', 'width=800,height=600');
-      
-      // Check if the window was opened successfully
-      if (paypalWindow) {
-        // Listen for messages from the PayPal window
-        const messageHandler = (event) => {
-          if (event.data === 'payment_success') {
-            setPaymentStatus('success');
-            window.removeEventListener('message', messageHandler);
-          } else if (event.data === 'payment_cancelled') {
-            setPaymentStatus('cancelled');
-            window.removeEventListener('message', messageHandler);
-          }
-        };
-
-        window.addEventListener('message', messageHandler);
-
-        // Clean up event listener if component unmounts
-        return () => {
-          window.removeEventListener('message', messageHandler);
-        };
-      } else {
-        toast({
-          title: "Please allow popups for this website to proceed with payment",
-          variant: "destructive",
-        });
-        setIsPaypalLoading(false);
-      }
+      window.location.href = approvalURL;
     }
-  }, [approvalURL, toast]);
-
-  if (paymentStatus === 'success') {
-    return (
-      <Card className="flex flex-col items-center justify-center p-10">
-        <CardHeader className="p-0 text-center">
-          <CardTitle className="text-4xl">Payment is successful!</CardTitle>
-        </CardHeader>
-        <p className="mt-4 text-muted-foreground">Thank you for your purchase.</p>
-        <Button className="mt-5" onClick={() => window.location.href = "/shop/account"}>
-          View Orders
-        </Button>
-      </Card>
-    );
-  }
-
-  if (paymentStatus === 'cancelled') {
-    return (
-      <Card className="flex flex-col items-center justify-center p-10">
-        <CardHeader className="p-0 text-center">
-          <CardTitle className="text-2xl">Payment Cancelled</CardTitle>
-        </CardHeader>
-        <p className="mt-4 text-muted-foreground">Your payment was cancelled.</p>
-        <Button className="mt-5" onClick={() => setPaymentStatus(null)}>
-          Try Again
-        </Button>
-      </Card>
-    );
-  }
+  }, [approvalURL]);
 
   return (
-    <div className="flex flex-col">
-      <div className="relative h-[300px] w-full overflow-hidden">
-        <img src={img} className="h-full w-full object-cover object-center" />
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-5 p-5">
-        <Address
-          selectedId={currentSelectedAddress}
-          setCurrentSelectedAddress={setCurrentSelectedAddress}
-        />
-        <div className="flex flex-col gap-4">
-          {cartItems && cartItems.items && cartItems.items.length > 0
-            ? cartItems.items.map((item) => (
-                <UserCartItemsContent cartItem={item} />
-              ))
-            : null}
-          <div className="mt-8 space-y-4">
-            <div className="flex justify-between">
-              <span className="font-bold">Total</span>
-              <span className="font-bold">${totalCartAmount}</span>
+    <div className="container mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Delivery Address</CardTitle>
+            </CardHeader>
+            <Address
+              currentSelectedAddress={currentSelectedAddress}
+              setCurrentSelectedAddress={setCurrentSelectedAddress}
+            />
+          </Card>
+        </div>
+        <div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Order Summary</CardTitle>
+            </CardHeader>
+            <UserCartItemsContent />
+            <div className="p-4">
+              <Button
+                className="w-full"
+                onClick={handleCreateOrder}
+                disabled={isPaymentStart}
+              >
+                {isPaymentStart ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Proceed to Payment"
+                )}
+              </Button>
             </div>
-          </div>
-          <div className="mt-4 w-full">
-            <Button
-              onClick={handleInitiatePaypalPayment}
-              className="w-full"
-              disabled={isPaypalLoading}
-            >
-              {isPaypalLoading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                "Checkout with Paypal"
-              )}
-            </Button>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
