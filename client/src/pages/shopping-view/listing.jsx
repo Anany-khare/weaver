@@ -15,26 +15,11 @@ import { addToCart, fetchCartItems, setCartItems } from "@/store/shop/cart-slice
 import {
   fetchAllFilteredProducts,
   fetchProductDetails,
-  setProductDetails,
 } from "@/store/shop/products-slice";
 import { ArrowUpDownIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
-import { Card, CardContent } from "@/components/ui/card";
-import { StarIcon } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 function createSearchParamsHelper(filterParams) {
   const queryParams = [];
@@ -42,16 +27,19 @@ function createSearchParamsHelper(filterParams) {
   for (const [key, value] of Object.entries(filterParams)) {
     if (Array.isArray(value) && value.length > 0) {
       const paramValue = value.join(",");
+
       queryParams.push(`${key}=${encodeURIComponent(paramValue)}`);
     }
   }
+
+  // console.log(queryParams, "queryParams");
 
   return queryParams.join("&");
 }
 
 function ShoppingListing() {
   const dispatch = useDispatch();
-  const { productList, productDetails, isLoading } = useSelector(
+  const { productList, productDetails } = useSelector(
     (state) => state.shopProducts
   );
   const { cartItems } = useSelector((state) => state.shopCart);
@@ -62,10 +50,6 @@ function ShoppingListing() {
   const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const { toast } = useToast();
   const [loadingStates, setLoadingStates] = useState({});
-  const [openProductDetails, setOpenProductDetails] = useState(false);
-  const [priceRange, setPriceRange] = useState([0, 1000]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("newest");
 
   const categorySearchParam = searchParams.get("category");
 
@@ -96,11 +80,13 @@ function ShoppingListing() {
   }
 
   function handleGetProductDetails(getCurrentProductId) {
+    // console.log(getCurrentProductId);
     dispatch(fetchProductDetails(getCurrentProductId));
   }
 
-  function handleAddToCart(getCurrentProductId, getTotalStock) {
-    let getCartItems = cartItems.items || [];
+  function handleAddtoCart(getCurrentProductId, getTotalStock) {
+    setLoadingStates((prev) => ({ ...prev, [getCurrentProductId]: true }));
+    let getCartItems = cartItems?.items || [];
 
     if (getCartItems.length) {
       const indexOfCurrentItem = getCartItems.findIndex(
@@ -113,58 +99,56 @@ function ShoppingListing() {
             title: `Only ${getQuantity} quantity can be added for this item`,
             variant: "destructive",
           });
-
+          setLoadingStates((prev) => ({ ...prev, [getCurrentProductId]: false }));
           return;
         }
       }
     }
+
     dispatch(
       addToCart({
         userId: user?.id,
         productId: getCurrentProductId,
         quantity: 1,
       })
-    ).then((data) => {
-      if (data?.payload?.success) {
-        dispatch(fetchCartItems(user?.id));
+    )
+      .unwrap()
+      .then((data) => {
+        if (data?.success) {
+          dispatch(fetchCartItems(user?.id));
+          toast({
+            title: "Product is added to cart",
+            variant: "success"
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to add item to cart:", error);
         toast({
-          title: "Product is added to cart",
+          title: "Failed to add item to cart",
+          variant: "destructive"
         });
-      }
-    });
-  }
-
-  function handleProductClick(getCurrentProduct) {
-    dispatch(setProductDetails(getCurrentProduct));
-    setOpenProductDetails(true);
-  }
-
-  function handleSearch() {
-    setSearchParams({ search: searchQuery });
-  }
-
-  function handleSortChange(value) {
-    setSortBy(value);
-  }
-
-  function handlePriceChange(value) {
-    setPriceRange(value);
+      })
+      .finally(() => {
+        setLoadingStates((prev) => ({ ...prev, [getCurrentProductId]: false }));
+      });
   }
 
   useEffect(() => {
-    if (categorySearchParam) {
-      setFilters({ category: [categorySearchParam] });
-      sessionStorage.setItem(
-        "filters",
-        JSON.stringify({ category: [categorySearchParam] })
-      );
-    } else {
-      const savedFilters = sessionStorage.getItem("filters");
-      if (savedFilters) {
-        setFilters(JSON.parse(savedFilters));
-      }
-    }
+    setSort("price-lowtohigh");
+    setFilters(JSON.parse(sessionStorage.getItem("filters")) || {});
   }, [categorySearchParam]);
+
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(fetchCartItems(user.id))
+        .unwrap()
+        .catch((error) => {
+          console.error("Failed to fetch cart items:", error);
+          // Don't clear cart on error
+        });
+    }
+  }, [dispatch, user?.id]);
 
   useEffect(() => {
     if (filters && Object.keys(filters).length > 0) {
@@ -184,120 +168,60 @@ function ShoppingListing() {
     if (productDetails !== null) setOpenDetailsDialog(true);
   }, [productDetails]);
 
+  // console.log(productList, "productListproductListproductList");
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <div className="md:col-span-1">
-          <Card>
-            <CardContent className="p-6">
-              <div className="grid gap-6">
-                <div className="grid gap-2">
-                  <Label>Search</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Search products..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                    <Button onClick={handleSearch}>Search</Button>
-                  </div>
-                </div>
-                <Separator />
-                <div className="grid gap-2">
-                  <Label>Sort By</Label>
-                  <Select value={sortBy} onValueChange={handleSortChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sort by" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest">Newest</SelectItem>
-                      <SelectItem value="price-low">Price: Low to High</SelectItem>
-                      <SelectItem value="price-high">Price: High to Low</SelectItem>
-                      <SelectItem value="rating">Rating</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Separator />
-                <div className="grid gap-2">
-                  <Label>Price Range</Label>
-                  <Slider
-                    value={priceRange}
-                    onValueChange={handlePriceChange}
-                    min={0}
-                    max={1000}
-                    step={10}
-                  />
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-        <div className="md:col-span-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {isLoading
-              ? Array.from({ length: 6 }).map((_, index) => (
-                  <Card key={index}>
-                    <CardContent className="p-6">
-                      <Skeleton className="w-full h-[200px] mb-4" />
-                      <Skeleton className="w-3/4 h-6 mb-2" />
-                      <Skeleton className="w-1/2 h-4 mb-4" />
-                      <Skeleton className="w-full h-10" />
-                    </CardContent>
-                  </Card>
-                ))
-              : productList?.map((product) => (
-                  <Card
-                    key={product._id}
-                    className="cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => handleProductClick(product)}
-                  >
-                    <CardContent className="p-6">
-                      <div className="aspect-square relative mb-4">
-                        <img
-                          src={product.image}
-                          alt={product.title}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      </div>
-                      <h3 className="font-semibold mb-2">{product.title}</h3>
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-1">
-                          <StarIcon className="h-4 w-4 text-yellow-500" />
-                          <span className="text-sm">
-                            {product.averageReview}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {product.salePrice > 0 ? (
-                            <>
-                              <span className="font-semibold">
-                                ${product.salePrice}
-                              </span>
-                              <span className="text-sm line-through text-muted-foreground">
-                                ${product.price}
-                              </span>
-                            </>
-                          ) : (
-                            <span className="font-semibold">
-                              ${product.price}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <Button className="w-full">View Details</Button>
-                    </CardContent>
-                  </Card>
-                ))}
+    <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-6 p-4 md:p-6">
+      <ProductFilter filters={filters} handleFilter={handleFilter} />
+      <div className="bg-background w-full rounded-lg shadow-sm">
+        <div className="p-4 border-b flex items-center justify-between">
+          <h2 className="text-lg font-extrabold">All Products</h2>
+          <div className="flex items-center gap-3">
+            <span className="text-muted-foreground">
+              {productList?.length} Products
+            </span>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-1"
+                >
+                  <ArrowUpDownIcon className="h-4 w-4" />
+                  <span>Sort by</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-[200px]">
+                <DropdownMenuRadioGroup value={sort} onValueChange={handleSort}>
+                  {sortOptions.map((sortItem) => (
+                    <DropdownMenuRadioItem
+                      value={sortItem.id}
+                      key={sortItem.id}
+                    >
+                      {sortItem.label}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+          {productList && productList.length > 0
+            ? productList.map((productItem) => (
+                <ShoppingProductTile
+                  handleGetProductDetails={handleGetProductDetails}
+                  product={productItem}
+                  handleAddtoCart={() => handleAddtoCart(productItem._id, productItem.totalStock)}
+                  isLoading={loadingStates[productItem._id]}
+                />
+              ))
+            : null}
         </div>
       </div>
       <ProductDetailsDialog
-        open={openProductDetails}
-        setOpen={setOpenProductDetails}
+        open={openDetailsDialog}
+        setOpen={setOpenDetailsDialog}
         productDetails={productDetails}
       />
     </div>

@@ -18,8 +18,13 @@ function ProductImageUpload({
 }) {
   const inputRef = useRef(null);
 
+  // console.log(isEditMode, "isEditMode");
+
   function handleImageFileChange(event) {
+    // console.log(event.target.files, "event.target.files");
     const selectedFile = event.target.files?.[0];
+    // console.log(selectedFile);
+
     if (selectedFile) setImageFile(selectedFile);
   }
 
@@ -48,6 +53,7 @@ function ProductImageUpload({
       "http://localhost:5000/api/admin/products/upload-image",
       data
     );
+    // console.log(response, "response");
 
     if (response?.data?.success) {
       setUploadedImageUrl(response.data.result.url);
@@ -61,51 +67,50 @@ function ProductImageUpload({
 
   return (
     <div
-      className={`${
-        isCustomStyling
-          ? "w-full"
-          : "w-full max-w-sm mx-auto border-2 border-dashed rounded-lg p-4"
-      }`}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      className={`w-full  mt-4 ${isCustomStyling ? "" : "max-w-md mx-auto"}`}
     >
-      <div className="flex flex-col items-center justify-center gap-4">
-        {imageLoadingState ? (
-          <Skeleton className="w-full h-[200px]" />
-        ) : imageFile ? (
-          <div className="relative w-full">
-            <img
-              src={URL.createObjectURL(imageFile)}
-              alt="Preview"
-              className="w-full h-[200px] object-cover rounded-lg"
-            />
+      <Label className="text-lg font-semibold mb-2 block">Upload Image</Label>
+      <div
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className={`${
+          isEditMode ? "opacity-60" : ""
+        } border-2 border-dashed rounded-lg p-4`}
+      >
+        <Input
+          id="image-upload"
+          type="file"
+          className="hidden"
+          ref={inputRef}
+          onChange={handleImageFileChange}
+          disabled={isEditMode}
+        />
+        {!imageFile ? (
+          <Label
+            htmlFor="image-upload"
+            className={`${
+              isEditMode ? "cursor-not-allowed" : ""
+            } flex flex-col items-center justify-center h-32 cursor-pointer`}
+          >
+            <UploadCloudIcon className="w-10 h-10 text-muted-foreground mb-2" />
+            <span>Drag & drop or click to upload image</span>
+          </Label>
+        ) : imageLoadingState ? (
+          <Skeleton className="h-10 bg-gray-100" />
+        ) : (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <FileIcon className="w-8 text-primary mr-2 h-8" />
+            </div>
+            <p className="text-sm font-medium">{imageFile.name}</p>
             <Button
-              variant="destructive"
+              variant="ghost"
               size="icon"
-              className="absolute top-2 right-2"
+              className="text-muted-foreground hover:text-foreground"
               onClick={handleRemoveImage}
             >
-              <XIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center gap-2">
-            <UploadCloudIcon className="h-10 w-10 text-muted-foreground" />
-            <div className="text-sm text-muted-foreground">
-              Drag and drop your image here, or click to select
-            </div>
-            <Input
-              type="file"
-              accept="image/*"
-              onChange={handleImageFileChange}
-              ref={inputRef}
-              className="hidden"
-            />
-            <Button
-              variant="outline"
-              onClick={() => inputRef.current?.click()}
-            >
-              Select Image
+              <XIcon className="w-4 h-4" />
+              <span className="sr-only">Remove File</span>
             </Button>
           </div>
         )}
