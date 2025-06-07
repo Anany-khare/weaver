@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { capturePayment } from "@/store/shop/order-slice";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { clearCart } from "@/store/shop/cart-slice";
 
@@ -12,7 +12,6 @@ function PaypalReturnPage() {
   const params = new URLSearchParams(location.search);
   const paymentId = params.get("paymentId");
   const payerId = params.get("PayerID");
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (paymentId && payerId) {
@@ -26,25 +25,28 @@ function PaypalReturnPage() {
           if ('BroadcastChannel' in window) {
             const bc = new BroadcastChannel('cart_channel');
             bc.postMessage('cart_cleared');
-            bc.close(); // Close the channel after sending
+            bc.close();
           }
-          navigate("/shop/payment-success");
+          // Send message to parent window
+          if (window.opener) {
+            window.opener.postMessage('payment_success', '*');
+            window.close();
+          }
         }
       });
     }
-  }, [paymentId, payerId, dispatch, navigate]);
+  }, [paymentId, payerId, dispatch]);
 
   useEffect(() => {
     // Check if the current URL is the PayPal cancel URL
     if (location.pathname === '/shop/paypal-cancel') {
-      const timer = setTimeout(() => {
-        window.close(); // Close the current tab
-      }, 2000); // 2000 milliseconds = 2 seconds
-
-      // Clean up the timer if the component unmounts or the URL changes
-      return () => clearTimeout(timer);
+      // Send message to parent window
+      if (window.opener) {
+        window.opener.postMessage('payment_cancelled', '*');
+        window.close();
+      }
     }
-  }, [location.pathname]); // No need for navigate dependency here
+  }, [location.pathname]);
 
   // Render different content based on the URL
   if (location.pathname === '/shop/paypal-cancel') {
@@ -53,8 +55,8 @@ function PaypalReturnPage() {
         <CardHeader className="p-0 text-center">
           <CardTitle className="text-2xl">Payment Cancelled</CardTitle>
         </CardHeader>
-        <p className="mt-4 text-muted-foreground">This tab will automatically close in a few seconds.</p>
-        <Button onClick={() => window.close()} className="mt-6">Click to Close This Tab</Button>
+        <p className="mt-4 text-muted-foreground">This window will close automatically.</p>
+        <Button onClick={() => window.close()} className="mt-6">Close Window</Button>
       </Card>
     );
   }
