@@ -101,9 +101,37 @@ function ShoppingCheckout() {
 
   useEffect(() => {
     if (approvalURL) {
-      window.location.href = approvalURL;
+      // Open PayPal in a new window
+      const paypalWindow = window.open(approvalURL, 'PayPal Payment', 'width=800,height=600');
+      
+      // Check if the window was opened successfully
+      if (paypalWindow) {
+        // Listen for messages from the PayPal window
+        const messageHandler = (event) => {
+          if (event.data === 'payment_success') {
+            setPaymentStatus('success');
+            window.removeEventListener('message', messageHandler);
+          } else if (event.data === 'payment_cancelled') {
+            setPaymentStatus('cancelled');
+            window.removeEventListener('message', messageHandler);
+          }
+        };
+
+        window.addEventListener('message', messageHandler);
+
+        // Clean up event listener if component unmounts
+        return () => {
+          window.removeEventListener('message', messageHandler);
+        };
+      } else {
+        toast({
+          title: "Please allow popups for this website to proceed with payment",
+          variant: "destructive",
+        });
+        setIsPaypalLoading(false);
+      }
     }
-  }, [approvalURL]);
+  }, [approvalURL, toast]);
 
   if (paymentStatus === 'success') {
     return (
