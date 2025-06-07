@@ -11,6 +11,14 @@
     {
       "source": "/shop/payment-success",
       "destination": "/index.html"
+    },
+    {
+      "source": "/shop/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/index.html"
     }
   ],
   "routes": [
@@ -24,6 +32,14 @@
     },
     {
       "src": "/shop/payment-success",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/shop/(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
       "dest": "/index.html"
     }
   ]
