@@ -2,13 +2,14 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { capturePayment } from "@/store/shop/order-slice";
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { clearCart } from "@/store/shop/cart-slice";
 
 function PaypalReturnPage() {
   const dispatch = useDispatch();
   const location = useLocation();
+  const navigate = useNavigate();
   const params = new URLSearchParams(location.search);
   const paymentId = params.get("paymentId");
   const token = params.get("token");
@@ -16,19 +17,22 @@ function PaypalReturnPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Redirect /shop/home to main website
-    if (location.pathname === '/shop/home') {
-      window.location.href = 'https://weaver-seven.vercel.app/';
+    // Handle all shop routes
+    const path = location.pathname;
+    
+    // Redirect /shop/home to root
+    if (path === '/shop/home') {
+      navigate('/');
       return;
     }
 
     // Handle PayPal cancel case
-    if (location.pathname === '/shop/paypal-cancel') {
+    if (path === '/shop/paypal-cancel') {
       if (window.opener) {
         window.opener.postMessage('payment_cancelled', '*');
         window.close();
       } else {
-        window.location.href = 'https://weaver-seven.vercel.app/';
+        navigate('/');
       }
       return;
     }
@@ -57,7 +61,7 @@ function PaypalReturnPage() {
               window.opener.postMessage('payment_success', '*');
               window.close();
             } else {
-              window.location.href = 'https://weaver-seven.vercel.app/';
+              navigate('/');
             }
           } else {
             setError("Payment processing failed. Please try again.");
@@ -73,12 +77,13 @@ function PaypalReturnPage() {
         window.opener.postMessage('payment_cancelled', '*');
         window.close();
       } else {
-        window.location.href = 'https://weaver-seven.vercel.app/';
+        navigate('/');
       }
     } else {
-      setError("Invalid payment information. Please try again.");
+      // For any other shop route, redirect to home
+      navigate('/');
     }
-  }, [paymentId, payerId, token, location.pathname, dispatch]);
+  }, [paymentId, payerId, token, location.pathname, dispatch, navigate]);
 
   if (error) {
     return (
@@ -88,7 +93,7 @@ function PaypalReturnPage() {
         </CardHeader>
         <p className="mt-4 text-muted-foreground">{error}</p>
         <Button 
-          onClick={() => window.location.href = 'https://weaver-seven.vercel.app/'} 
+          onClick={() => navigate('/')} 
           className="mt-6"
         >
           Return to Home
