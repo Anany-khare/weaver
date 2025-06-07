@@ -1,12 +1,30 @@
 {
   "rewrites": [
     {
-      "source": "/shop/paypal-return",
+      "source": "/shop/paypal-return/:path*",
       "destination": "/index.html"
     },
     {
-      "source": "/shop/paypal-cancel",
+      "source": "/shop/paypal-cancel/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/shop/payment-success",
+      "destination": "/index.html"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/shop/paypal-return(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/shop/paypal-cancel(.*)",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/shop/payment-success",
+      "dest": "/index.html"
     }
   ]
 } 
