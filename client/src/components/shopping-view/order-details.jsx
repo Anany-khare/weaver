@@ -28,6 +28,8 @@ function ShoppingOrderDetailsView({ orderDetails }) {
                     ? "bg-green-500"
                     : orderDetails?.orderStatus === "rejected"
                     ? "bg-red-600"
+                    : orderDetails?.orderStatus === "pending"
+                    ? "bg-red-600"
                     : "bg-black"
                 }`}
               >

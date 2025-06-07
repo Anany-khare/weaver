@@ -37,8 +37,6 @@ function ShoppingOrders() {
     if (orderDetails !== null) setOpenDetailsDialog(true);
   }, [orderDetails]);
 
-  // console.log(orderDetails, "orderDetails");
-
   return (
     <Card>
       <CardHeader>
@@ -69,6 +67,8 @@ function ShoppingOrders() {
                           orderItem?.orderStatus === "confirmed"
                             ? "bg-green-500"
                             : orderItem?.orderStatus === "rejected"
+                            ? "bg-red-600"
+                            : orderItem?.orderStatus === "pending"
                             ? "bg-red-600"
                             : "bg-black"
                         }`}

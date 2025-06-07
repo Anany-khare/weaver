@@ -22,8 +22,6 @@ function AdminOrderDetailsView({ orderDetails }) {
   const dispatch = useDispatch();
   const { toast } = useToast();
 
-  // console.log(orderDetails, "orderDetailsorderDetails");
-
   function handleUpdateStatus(event) {
     event.preventDefault();
     const { status } = formData;
@@ -62,6 +60,8 @@ function AdminOrderDetailsView({ orderDetails }) {
                   orderDetails?.orderStatus === "confirmed"
                     ? "bg-green-500"
                     : orderDetails?.orderStatus === "rejected"
+                    ? "bg-red-600"
+                    : orderDetails?.orderStatus === "pending"
                     ? "bg-red-600"
                     : "bg-black"
                 }`}
