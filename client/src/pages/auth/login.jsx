@@ -43,7 +43,7 @@ function AuthLogin() {
           Sign in to your account
         </h1>
         <p className="mt-2">
-          Don't have an account
+          Don't have an account?
           <Link
             className="font-medium ml-2 text-primary hover:underline"
             to="/auth/register"
