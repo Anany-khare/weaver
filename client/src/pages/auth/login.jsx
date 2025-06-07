@@ -3,8 +3,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { loginFormControls } from "@/config";
 import { loginUser } from "@/store/auth-slice";
 import { useState } from "react";
-import { useDispatch } from "react-redux";
-import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
 
 const initialState = {
   email: "",
@@ -14,23 +14,26 @@ const initialState = {
 function AuthLogin() {
   const [formData, setFormData] = useState(initialState);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { toast } = useToast();
+  const { isLoading, error } = useSelector((state) => state.auth);
 
-  function onSubmit(event) {
+  async function onSubmit(event) {
     event.preventDefault();
-
-    dispatch(loginUser(formData)).then((data) => {
-      if (data?.payload?.success) {
+    try {
+      const result = await dispatch(loginUser(formData)).unwrap();
+      if (result.success) {
         toast({
-          title: data?.payload?.message,
+          title: result.message,
         });
-      } else {
-        toast({
-          title: data?.payload?.message,
-          variant: "destructive",
-        });
+        navigate("/shop/home");
       }
-    });
+    } catch (error) {
+      toast({
+        title: error.message || "Login failed. Please try again.",
+        variant: "destructive",
+      });
+    }
   }
 
   return (
@@ -51,11 +54,15 @@ function AuthLogin() {
       </div>
       <CommonForm
         formControls={loginFormControls}
-        buttonText={"Sign In"}
+        buttonText={isLoading ? "Signing in..." : "Sign In"}
         formData={formData}
         setFormData={setFormData}
         onSubmit={onSubmit}
+        disabled={isLoading}
       />
+      {error && (
+        <p className="text-sm text-red-500 text-center">{error}</p>
+      )}
     </div>
   );
 }

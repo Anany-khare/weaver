@@ -1,10 +1,11 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000',
+  baseURL: import.meta.env.VITE_API_URL || 'https://weaver-backend.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true
 });
 
 // Add a request interceptor to add the auth token to every request
@@ -32,12 +33,13 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Only handle 401 errors for non-auth requests
-    if (error.response?.status === 401 && !error.config.url.includes('/auth/')) {
+    // Handle 401 errors
+    if (error.response?.status === 401) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
+      // Only redirect if not already on login page
       if (!window.location.pathname.includes('/auth/login')) {
-        window.location.replace('/auth/login');
+        window.location.href = '/auth/login';
       }
     }
     return Promise.reject(error);
