@@ -16,13 +16,19 @@ function PaypalReturnPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Redirect /shop/home to main website
+    if (location.pathname === '/shop/home') {
+      window.location.href = 'https://weaver-seven.vercel.app/';
+      return;
+    }
+
     // Handle PayPal cancel case
     if (location.pathname === '/shop/paypal-cancel') {
       if (window.opener) {
         window.opener.postMessage('payment_cancelled', '*');
         window.close();
       } else {
-        window.location.href = '/shop/checkout';
+        window.location.href = 'https://weaver-seven.vercel.app/';
       }
       return;
     }
@@ -51,7 +57,7 @@ function PaypalReturnPage() {
               window.opener.postMessage('payment_success', '*');
               window.close();
             } else {
-              window.location.href = '/shop/payment-success';
+              window.location.href = 'https://weaver-seven.vercel.app/';
             }
           } else {
             setError("Payment processing failed. Please try again.");
@@ -67,7 +73,7 @@ function PaypalReturnPage() {
         window.opener.postMessage('payment_cancelled', '*');
         window.close();
       } else {
-        window.location.href = '/shop/checkout';
+        window.location.href = 'https://weaver-seven.vercel.app/';
       }
     } else {
       setError("Invalid payment information. Please try again.");
@@ -82,10 +88,10 @@ function PaypalReturnPage() {
         </CardHeader>
         <p className="mt-4 text-muted-foreground">{error}</p>
         <Button 
-          onClick={() => window.location.href = '/shop/checkout'} 
+          onClick={() => window.location.href = 'https://weaver-seven.vercel.app/'} 
           className="mt-6"
         >
-          Return to Checkout
+          Return to Home
         </Button>
       </Card>
     );
