@@ -11,6 +11,7 @@ function PaypalReturnPage() {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const paymentId = params.get("paymentId");
+  const token = params.get("token");
   const payerId = params.get("PayerID");
 
   useEffect(() => {
@@ -31,6 +32,9 @@ function PaypalReturnPage() {
           if (window.opener) {
             window.opener.postMessage('payment_success', '*');
             window.close();
+          } else {
+            // If no opener window, redirect to success page
+            window.location.href = '/shop/payment-success';
           }
         }
       });
@@ -44,6 +48,9 @@ function PaypalReturnPage() {
       if (window.opener) {
         window.opener.postMessage('payment_cancelled', '*');
         window.close();
+      } else {
+        // If no opener window, redirect to checkout page
+        window.location.href = '/shop/checkout';
       }
     }
   }, [location.pathname]);
