@@ -28,7 +28,7 @@ const PORT = process.env.PORT;
 
 app.use(
   cors({
-    origin: "https://weaver-seven.vercel.app",
+    origin: "https://weaver-shop.vercel.app",
     methods: ["GET", "POST", "DELETE", "PUT"],
     allowedHeaders: [
       "Content-Type",
