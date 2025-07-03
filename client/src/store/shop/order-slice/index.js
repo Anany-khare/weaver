@@ -7,6 +7,7 @@ const initialState = {
   orderId: null,
   orderList: [],
   orderDetails: null,
+  inrOrders: [],
 };
 
 export const createNewOrder = createAsyncThunk(
@@ -63,6 +64,22 @@ const shoppingOrderSlice = createSlice({
     resetOrderDetails: (state) => {
       state.orderDetails = null;
     },
+    addINROrder: (state, action) => {
+      state.inrOrders.push(action.payload);
+      state.orderList = [
+        ...(state.orderList || []),
+        {
+          _id: action.payload.orderId,
+          orderStatus: action.payload.status === 'success' ? 'confirmed' : 'cancelled',
+          totalAmount: action.payload.amount,
+          orderDate: action.payload.date,
+          paymentMethod: 'WeaverPay',
+          paymentStatus: action.payload.status,
+          cartItems: [],
+          addressInfo: action.payload.address || null,
+        },
+      ];
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -108,6 +125,6 @@ const shoppingOrderSlice = createSlice({
   },
 });
 
-export const { resetOrderDetails } = shoppingOrderSlice.actions;
+export const { resetOrderDetails, addINROrder } = shoppingOrderSlice.actions;
 
 export default shoppingOrderSlice.reducer;

@@ -17,7 +17,7 @@ const addFeatureImage = async (req, res) => {
       data: featureImages,
     });
   } catch (e) {
-    console.log(e);
+    // console.log(e);
     res.status(500).json({
       success: false,
       message: "Some error occured!",
@@ -34,7 +34,7 @@ const getFeatureImages = async (req, res) => {
       data: images,
     });
   } catch (e) {
-    console.log(e);
+    // console.log(e);
     res.status(500).json({
       success: false,
       message: "Some error occured!",

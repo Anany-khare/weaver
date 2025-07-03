@@ -41,12 +41,17 @@ export const loginUser = createAsyncThunk(
   async (formData) => {
     try {
       const response = await api.post("/api/auth/login", formData);
-      if (response.data.token) {
+      if (response.data.success && response.data.token) {
         setAuthToken(response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
+      } else {
+        setAuthToken(null);
+        localStorage.removeItem('user');
       }
       return response.data;
     } catch (error) {
+      setAuthToken(null);
+      localStorage.removeItem('user');
       throw error.response?.data || { message: "Login failed" };
     }
   }
@@ -61,6 +66,11 @@ export const logoutUser = createAsyncThunk(
       localStorage.removeItem('authToken');
       localStorage.removeItem('user');
       delete api.defaults.headers.common['Authorization'];
+      // Clear cart and order/payment data
+      localStorage.removeItem('cart');
+      sessionStorage.removeItem('currentOrderId');
+      sessionStorage.removeItem('approvalURL');
+      // Add any other keys you use for cart/order/payment here
     }
   }
 );
@@ -115,9 +125,15 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.isAuthenticated = true;
-        state.user = action.payload.user;
-        state.error = null;
+        if (action.payload.success) {
+          state.isAuthenticated = true;
+          state.user = action.payload.user;
+          state.error = null;
+        } else {
+          state.isAuthenticated = false;
+          state.user = null;
+          state.error = action.payload.message || "Login failed";
+        }
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;

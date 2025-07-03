@@ -23,6 +23,7 @@ import PaypalReturnPage from "./pages/shopping-view/paypal-return";
 import PaypalCancelPage from "./pages/shopping-view/paypal-cancel";
 import PaymentSuccessPage from "./pages/shopping-view/payment-success";
 import SearchProducts from "./pages/shopping-view/search";
+import INRPayment from "./pages/shopping-view/inr-payment";
 
 function App() {
   const { user, isAuthenticated, isLoading } = useSelector(
@@ -89,6 +90,8 @@ function App() {
           <Route path="payment-success" element={<PaymentSuccessPage />} />
           <Route path="search" element={<SearchProducts />} />
         </Route>
+        {/* Render INRPayment without layout/navbar */}
+        <Route path="/shop/inr-payment" element={<INRPayment />} />
         <Route path="/unauth-page" element={<UnauthPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

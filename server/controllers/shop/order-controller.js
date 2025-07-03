@@ -2,6 +2,7 @@ const paypal = require("../../helpers/paypal");
 const Order = require("../../models/Order");
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
+const mongoose = require("mongoose");
 
 const createOrder = async (req, res) => {
   try {
@@ -19,6 +20,14 @@ const createOrder = async (req, res) => {
       payerId,
       cartId,
     } = req.body;
+
+    // Validate totalAmount before proceeding
+    if (!totalAmount || isNaN(totalAmount) || totalAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid payment amount.",
+      });
+    }
 
     const create_payment_json = {
       intent: "sale",
@@ -42,7 +51,7 @@ const createOrder = async (req, res) => {
           },
           amount: {
             currency: "USD",
-            total: totalAmount.toFixed(2),
+            total: Number(totalAmount).toFixed(2),
           },
           description: "description",
         },
@@ -52,10 +61,10 @@ const createOrder = async (req, res) => {
     paypal.payment.create(create_payment_json, async (error, paymentInfo) => {
       if (error) {
         console.log(error);
-
         return res.status(500).json({
           success: false,
-          message: "Error while creating paypal payment",
+          message: error.response ? error.response.message : "Error while creating paypal payment",
+          details: error.response || error, // for debugging
         });
       } else {
         const newlyCreatedOrder = new Order({
@@ -114,22 +123,27 @@ const capturePayment = async (req, res) => {
     order.payerId = payerId;
 
     for (let item of order.cartItems) {
-      let product = await Product.findById(item.productId);
+      let productId = item.productId;
+      // Ensure productId is an ObjectId
+      if (typeof productId === 'string' && mongoose.Types.ObjectId.isValid(productId)) {
+        productId = new mongoose.Types.ObjectId(productId);
+      }
+      let product = await Product.findById(productId);
 
       if (!product) {
-        return res.status(404).json({
-          success: false,
-          message: `Not enough stock for this product ${product.title}`,
-        });
+        console.log('Product not found for ID:', productId);
+        continue; // Skip this item if not found
       }
 
       product.totalStock -= item.quantity;
-
+      if (product.totalStock < 0) product.totalStock = 0;
       await product.save();
     }
 
     const getCartId = order.cartId;
-    await Cart.findByIdAndDelete(getCartId);
+    if (getCartId) {
+      await Cart.findByIdAndDelete(getCartId);
+    }
 
     await order.save();
 
@@ -199,9 +213,67 @@ const getOrderDetails = async (req, res) => {
   }
 };
 
+// Create a mock order (for WeaverPay)
+const createMockOrder = async (req, res) => {
+  try {
+    const {
+      userId,
+      cartItems = [],
+      addressInfo = {},
+      orderStatus = "confirmed",
+      paymentMethod = "WeaverPay",
+      paymentStatus = "paid",
+      totalAmount,
+      orderDate = new Date(),
+      orderUpdateDate = new Date(),
+    } = req.body;
+
+    const newOrder = new Order({
+      userId,
+      cartItems,
+      addressInfo,
+      orderStatus,
+      paymentMethod,
+      paymentStatus,
+      totalAmount,
+      orderDate,
+      orderUpdateDate,
+    });
+    await newOrder.save();
+
+    // Reduce product stock for each item (after saving order)
+    if (Array.isArray(cartItems)) {
+      for (let item of cartItems) {
+        let productId = item.productId;
+        if (typeof productId === 'string' && mongoose.Types.ObjectId.isValid(productId)) {
+          productId = new mongoose.Types.ObjectId(productId);
+        }
+        if (!mongoose.Types.ObjectId.isValid(productId)) continue;
+        let product = await Product.findById(productId);
+        if (product) {
+          product.totalStock -= item.quantity;
+          if (product.totalStock < 0) product.totalStock = 0;
+          await product.save();
+        }
+      }
+    }
+
+    // Delete user's cart from backend after successful WeaverPay order
+    if (userId) {
+      await Cart.findOneAndDelete({ userId });
+    }
+
+    res.status(201).json({ success: true, data: newOrder });
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({ success: false, message: "Some error occured!" });
+  }
+};
+
 module.exports = {
   createOrder,
   capturePayment,
   getAllOrdersByUser,
   getOrderDetails,
+  createMockOrder,
 };

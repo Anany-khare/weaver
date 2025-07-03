@@ -1,7 +1,7 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { capturePayment } from "@/store/shop/order-slice";
+import { capturePayment, getAllOrdersByUserId } from "@/store/shop/order-slice";
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { clearCart } from "@/store/shop/cart-slice";
@@ -15,6 +15,7 @@ function PaypalReturnPage() {
   const token = params.get("token");
   const payerId = params.get("PayerID");
   const [error, setError] = useState(null);
+  const { user } = useSelector((state) => state.auth);
 
   useEffect(() => {
     // Handle all shop routes
@@ -50,7 +51,9 @@ function PaypalReturnPage() {
           if (data?.payload?.success) {
             sessionStorage.removeItem("currentOrderId");
             dispatch(clearCart());
-            
+            if (user?.id) {
+              dispatch(getAllOrdersByUserId(user.id));
+            }
             if ('BroadcastChannel' in window) {
               const bc = new BroadcastChannel('cart_channel');
               bc.postMessage('cart_cleared');
@@ -65,6 +68,9 @@ function PaypalReturnPage() {
             }
           } else {
             setError("Payment processing failed. Please try again.");
+            if (user?.id) {
+              dispatch(getAllOrdersByUserId(user.id));
+            }
           }
         })
         .catch((err) => {
@@ -83,7 +89,7 @@ function PaypalReturnPage() {
       // For any other shop route, redirect to home
       navigate('/');
     }
-  }, [paymentId, payerId, token, location.pathname, dispatch, navigate]);
+  }, [paymentId, payerId, token, location.pathname, dispatch, navigate, user]);
 
   if (error) {
     return (

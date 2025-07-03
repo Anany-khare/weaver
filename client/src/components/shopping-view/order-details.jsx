@@ -47,7 +47,11 @@ function ShoppingOrderDetailsView({ orderDetails }) {
           </div>
           <div className="flex mt-2 items-center justify-between">
             <p className="font-medium">Order Price</p>
-            <Label>${orderDetails?.totalAmount}</Label>
+            <Label>
+              {orderDetails?.paymentMethod === 'WeaverPay'
+                ? `₹${orderDetails?.totalAmount}`
+                : `$${orderDetails?.totalAmount}`}
+            </Label>
           </div>
         </div>
         <Separator />
@@ -60,7 +64,11 @@ function ShoppingOrderDetailsView({ orderDetails }) {
                     <li className="flex items-center justify-between">
                       <span>Title: {item.title}</span>
                       <span>Quantity: {item.quantity}</span>
-                      <span>Price: ${item.price}</span>
+                      <span>
+                        Price: {orderDetails?.paymentMethod === 'WeaverPay'
+                          ? `₹${item.price}`
+                          : `$${item.price}`}
+                      </span>
                     </li>
                   ))
                 : null}
@@ -72,11 +80,23 @@ function ShoppingOrderDetailsView({ orderDetails }) {
             <div className="font-medium">Shipping Info</div>
             <div className="grid gap-0.5 text-muted-foreground">
               <span>{user.userName}</span>
-              <span>{orderDetails?.addressInfo?.address}</span>
-              <span>{orderDetails?.addressInfo?.city}</span>
-              <span>{orderDetails?.addressInfo?.pincode}</span>
-              <span>{orderDetails?.addressInfo?.phone}</span>
-              <span>{orderDetails?.addressInfo?.notes}</span>
+              {orderDetails?.addressInfo && (
+                orderDetails.addressInfo.address ||
+                orderDetails.addressInfo.city ||
+                orderDetails.addressInfo.pincode ||
+                orderDetails.addressInfo.phone ||
+                orderDetails.addressInfo.notes
+              ) ? (
+                <>
+                  {orderDetails.addressInfo.address && <span>{orderDetails.addressInfo.address}</span>}
+                  {orderDetails.addressInfo.city && <span>{orderDetails.addressInfo.city}</span>}
+                  {orderDetails.addressInfo.pincode && <span>{orderDetails.addressInfo.pincode}</span>}
+                  {orderDetails.addressInfo.phone && <span>{orderDetails.addressInfo.phone}</span>}
+                  {orderDetails.addressInfo.notes && <span>{orderDetails.addressInfo.notes}</span>}
+                </>
+              ) : (
+                <span>No address info available.</span>
+              )}
             </div>
           </div>
         </div>

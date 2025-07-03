@@ -123,9 +123,15 @@ function ShoppingHome() {
           <img
             src={img}
             key={index}
-            className={`${
+            className={`$${
               index === currentSlide ? "opacity-100" : "opacity-0"
-            } absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000`}
+            } absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000 cursor-pointer`}
+            onClick={() => {
+              const section = document.getElementById("featured-products");
+              if (section) {
+                section.scrollIntoView({ behavior: "smooth" });
+              }
+            }}
           />
         ))}
         <Button
@@ -153,7 +159,6 @@ function ShoppingHome() {
         </Button>
       </div>
 
-      {/* Categories */}
       <section className="py-12 bg-background">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">
@@ -198,7 +203,7 @@ function ShoppingHome() {
       </section>
 
       {/* Feature Products */}
-      <section className="py-12">
+      <section id="featured-products" className="py-12">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8">
             Feature Products
@@ -228,3 +233,4 @@ function ShoppingHome() {
 }
 
 export default ShoppingHome;
+

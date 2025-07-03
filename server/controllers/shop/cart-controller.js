@@ -1,5 +1,6 @@
 const Cart = require("../../models/Cart");
 const Product = require("../../models/Product");
+const mongoose = require("mongoose");
 
 const addToCart = async (req, res) => {
   try {
@@ -10,6 +11,10 @@ const addToCart = async (req, res) => {
         success: false,
         message: "Invalid data provided!",
       });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid userId" });
     }
 
     const product = await Product.findById(productId);
@@ -60,6 +65,10 @@ const fetchCartItems = async (req, res) => {
         success: false,
         message: "User id is manadatory!",
       });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid userId" });
     }
 
     const cart = await Cart.findOne({ userId }).populate({
@@ -117,6 +126,10 @@ const updateCartItemQty = async (req, res) => {
         success: false,
         message: "Invalid data provided!",
       });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid userId" });
     }
 
     const cart = await Cart.findOne({ userId });
@@ -181,6 +194,10 @@ const deleteCartItem = async (req, res) => {
       });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid userId" });
+    }
+
     const cart = await Cart.findOne({ userId }).populate({
       path: "items.productId",
       select: "image title price salePrice",
@@ -229,9 +246,44 @@ const deleteCartItem = async (req, res) => {
   }
 };
 
+const deleteUserCart = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        message: "User id is mandatory!",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ success: false, message: "Invalid userId" });
+    }
+
+    const cart = await Cart.findOneAndDelete({ userId });
+    if (!cart) {
+      return res.status(404).json({
+        success: false,
+        message: "Cart not found!",
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Cart deleted successfully!",
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Error",
+    });
+  }
+};
+
 module.exports = {
   addToCart,
-  updateCartItemQty,
-  deleteCartItem,
   fetchCartItems,
+  deleteCartItem,
+  updateCartItemQty,
+  deleteUserCart,
 };

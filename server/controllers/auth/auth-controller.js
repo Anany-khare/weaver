@@ -40,8 +40,17 @@ const registerUser = async (req, res) => {
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
+  if (!email || !password) {
+    return res.json({
+      success: false,
+      message: "Email and password are required",
+    });
+  }
+  
+
   try {
     const checkUser = await User.findOne({ email });
+    // console.log(checkUser);
     if (!checkUser)
       return res.json({
         success: false,

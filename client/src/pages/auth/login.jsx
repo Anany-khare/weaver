@@ -18,8 +18,15 @@ function AuthLogin() {
   const { toast } = useToast();
   const { isLoading, error } = useSelector((state) => state.auth);
 
-  async function onSubmit(event) {
-    event.preventDefault();
+  async function onSubmit(e) {
+    e.preventDefault();
+    if (!formData.email || !formData.password) {
+      toast({
+        title: "Email and password are required.",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       const result = await dispatch(loginUser(formData)).unwrap();
       if (result.success) {
